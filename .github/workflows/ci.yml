@@ -13,7 +13,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,21 +20,21 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
           cache: maven
 
-      # Asegura que mvnw corra en Linux
+      # Asegura mvnw ejecutable en Linux y corrige CRLF si aparece
       - name: Make mvnw runnable (LF + +x)
         run: |
           sed -i 's/\r$//' mvnw || true
           chmod +x mvnw
 
-      # Unit + Integration (Failsafe ejecuta *IT en verify*)
+      # Ejecuta unit + integration (Failsafe recoge **IT)
       - name: Build + Unit & Integration tests
         run: ./mvnw -B -ntp clean verify | tee build.log
 
-      # Evidencias: logs + XML de Surefire/Failsafe
+      # Sube evidencias
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
