@@ -136,3 +136,49 @@ Build + tests + log
 Git Bash / WSL
 ./mvnw -B -ntp clean verify | tee build.log
 
+Ejercicio 3 – Deployment Pipeline y aseguramiento de calidad
+Este repo trae el CI. Aquí con una plantilla para un deployment pipeline (se crea .github/workflows/deploy.yml o usar Jenkins/GitLab si prefieres):
+name: Deploy (Staging + Acceptance Gate)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build artifact
+        run: ./mvnw -B -ntp -DskipTests package
+
+      # (Ejemplo) levantar entorno efímero
+      - name: Start staging (docker-compose)
+        run: docker compose -f infra/docker-compose.staging.yml up -d
+
+      # Acceptance Gate (reemplazar por tu suite BDD/E2E/tag @acceptance)
+      - name: Acceptance tests
+        run: ./mvnw -B -ntp verify -P acceptance
+
+      # Si falla el gate => rollback
+      - name: Rollback
+        if: failure()
+        run: ./scripts/rollback.sh
+Estrategias de despliegue
+•	Rollback automático: script en scripts/rollback.sh que vuelve al artefacto estable.
+•	Blue-Green: mantener dos entornos idénticos y “switch” de tráfico.
+•	Canary: liberar a un % de tráfico incremental con métricas y health checks.
+Evidencias de despliegue/rollback
+Adjuntar logs del job de deploy, captura del Acceptance Gate (pass/fail) y evidencia del rollback o del switch Blue-Green/Canary.
+Cómo ejecutar todo localmente con log
+./mvnw -B -ntp clean verify | tee build.log
+
+
+
