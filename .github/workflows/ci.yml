@@ -1,4 +1,4 @@
-  name: CI Java 21
+ name: CI Java 21
 
 on:
   push:
@@ -7,40 +7,39 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
 
-      - name: Make mvnw executable
-        run: chmod +x mvnw
+      # Arregla fin de línea y permisos de mvnw en Linux
+      - name: Make mvnw runnable (LF + +x)
+        run: |
+          sed -i 's/\r$//' mvnw || true
+          chmod +x mvnw
 
-      # Unit tests (Surefire)
-      - name: Unit tests
-        run: ./mvnw -B -ntp clean test | tee unit-build.log
+      # Corre TODO (unit + integration). Failsafe ejecuta los *IT automáticamente*
+      - name: Build + Unit & Integration tests
+        run: ./mvnw -B -ntp clean verify | tee build.log
 
-      # Integration tests (Failsafe: ejecuta *IT en verify)
-      - name: Integration tests
-        run: ./mvnw -B -ntp verify | tee it-build.log
-
-      # Evidencias (logs + XML)
+      # Evidencias: logs y reportes XML de Surefire/Failsafe
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: maven-test-reports
           path: |
-            unit-build.log
-            it-build.log
+            build.log
             **/target/surefire-reports/**
             **/target/failsafe-reports/**
+          if-no-files-found: warn
