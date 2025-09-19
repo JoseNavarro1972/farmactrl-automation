@@ -1,0 +1,51 @@
+name: Deploy (Blue-Green + Rollback)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 1) Levanta BLUE estable (8080) y GREEN candidata (8081)
+      - name: Start STABLE (BLUE 8080)
+        run: bash scripts/start_stable.sh
+
+      - name: Start CANDIDATE (GREEN 8081)
+        run: bash scripts/start_candidate.sh
+
+      # 2) Acceptance Gate (smoke sobre 8081)
+      - name: Acceptance smoke (GREEN @8081)
+        run: bash tests/acceptance_smoke.sh
+
+      # 3) Promoción a GREEN en 8080
+      - name: Promote to GREEN on 8080
+        run: bash scripts/promote_to_green.sh
+
+      # 4) Verificación final y rollback si falla
+      - name: Verify production (8080 is GREEN)
+        run: curl -fsS http://localhost:8080/ | grep -q "GREEN"
+
+      - name: Rollback to BLUE if verify failed
+        if: failure()
+        run: bash scripts/rollback_to_blue.sh
+
+      # 5) Logs como evidencia
+      - name: Collect docker logs
+        if: always()
+        run: |
+          (docker compose -f infra/docker-compose.staging.yml logs || true) > docker-stable.log
+          (docker compose -f infra/docker-compose.staging.yml -f infra/docker-compose.candidate.yml logs || true) > docker-candidate.log
+
+      - name: Upload deploy artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-logs
+          path: |
+            docker-stable.log
+            docker-candidate.log
