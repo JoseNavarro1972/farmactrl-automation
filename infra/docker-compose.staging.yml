@@ -1,0 +1,9 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        WEB_RELEASE: ${WEB_RELEASE:-blue}
+    ports:
+      - "8080:80"
