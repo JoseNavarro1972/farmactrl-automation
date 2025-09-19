@@ -35,7 +35,11 @@ jobs:
       - name: Integration tests (Failsafe, profile it)
         run: ./mvnw -B -ntp verify -Pit | tee it-build.log
 
+<<<<<<< HEAD
       # (Opcional) Reporte HTML (incluye surefire y failsafe)
+=======
+      # (Opcional) HTML con surefire-report (incluye directorios de surefire y failsafe)
+>>>>>>> c5267b5 (ci: Java21 + unit (Surefire) + integration (Failsafe -Pit) + evidencias)
       - name: Generate HTML reports
         run: |
           ./mvnw -B -ntp surefire-report:report \
