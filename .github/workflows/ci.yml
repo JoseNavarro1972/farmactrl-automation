@@ -24,26 +24,25 @@ jobs:
           java-version: '21'
           cache: maven
 
-      # por si el repo vino con permisos perdidos en mvnw
       - name: Make mvnw executable
         run: chmod +x mvnw
 
-      # --- Ejercicio 1 y parte de Ejercicio 2 (build + unit tests) ---
+      # Unit tests (Surefire)
       - name: Unit tests (Surefire)
         run: ./mvnw -B -ntp clean test | tee unit-build.log
 
-      # --- Ejercicio 2: segundo tipo de pruebas (integración) ---
+      # Integration tests (Failsafe con perfil it)
       - name: Integration tests (Failsafe, profile it)
         run: ./mvnw -B -ntp verify -Pit | tee it-build.log
 
-      # (Opcional) Generar reportes HTML
-      - name: Generate HTML test reports
+      # (Opcional) Reporte HTML (incluye surefire y failsafe)
+      - name: Generate HTML reports
         run: |
-          ./mvnw -B -ntp surefire-report:report -Daggregate=true || true
-          ./mvnw -B -ntp failsafe:report-only || true
-          ./mvnw -B -ntp site -DskipTests || true
+          ./mvnw -B -ntp surefire-report:report \
+            -Daggregate=true \
+            -DreportsDirectories="target/surefire-reports,target/failsafe-reports" || true
 
-      # Evidencias: logs + reportes XML/HTML
+      # Evidencias: logs + XML/TXT + HTML
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,5 +53,5 @@ jobs:
             it-build.log
             **/target/surefire-reports/**
             **/target/failsafe-reports/**
-            **/target/site/**/*
+            **/target/site/**
           if-no-files-found: warn
