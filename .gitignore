@@ -13,3 +13,6 @@ target/
 # SO
 .DS_Store
 Thumbs.db
+
+# Logs locales
+*.log
