@@ -1,4 +1,4 @@
-name: CI Java 21
+ name: CI Java 21
 
 on:
   push:
@@ -20,33 +20,30 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '21'
           cache: maven
 
       - name: Make mvnw executable
         run: chmod +x mvnw
 
-      # Unit tests (Surefire)
+      # Ejercicio 1 + parte de 2: unit tests con Surefire
       - name: Unit tests (Surefire)
         run: ./mvnw -B -ntp clean test | tee unit-build.log
 
-      # Integration tests (Failsafe con perfil it)
-      - name: Integration tests (Failsafe, profile it)
-        run: ./mvnw -B -ntp verify -Pit | tee it-build.log
+      # Ejercicio 2: segundo tipo de prueba (integration) con Failsafe
+      # Sin perfiles raros: ejecutamos integration-test + verify explícitos
+      - name: Integration tests (Failsafe)
+        run: ./mvnw -B -ntp failsafe:integration-test failsafe:verify | tee it-build.log
 
-<<<<<<< HEAD
-      # (Opcional) Reporte HTML (incluye surefire y failsafe)
-=======
-      # (Opcional) HTML con surefire-report (incluye directorios de surefire y failsafe)
->>>>>>> c5267b5 (ci: Java21 + unit (Surefire) + integration (Failsafe -Pit) + evidencias)
-      - name: Generate HTML reports
+      # Reporte HTML (incluye los directorios de surefire y failsafe)
+      - name: Generate HTML test report
         run: |
           ./mvnw -B -ntp surefire-report:report \
             -Daggregate=true \
             -DreportsDirectories="target/surefire-reports,target/failsafe-reports" || true
 
-      # Evidencias: logs + XML/TXT + HTML
+      # Evidencias: logs + XML/HTML
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,5 +54,5 @@ jobs:
             it-build.log
             **/target/surefire-reports/**
             **/target/failsafe-reports/**
-            **/target/site/**
+            **/target/site/surefire-report.html
           if-no-files-found: warn
